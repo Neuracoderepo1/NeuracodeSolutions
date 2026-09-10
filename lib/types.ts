@@ -77,3 +77,24 @@ export type TransitionResult = {
   gateState: Record<GateName, boolean> | null;
   blockingReasons: string[];
 };
+
+/**
+ * Row shape of the public.opportunity_summary view (migration 0025).
+ * Read-only display data — pbv/gatesPassed/qualifiedCommitments here are
+ * for showing the board, not for deciding BUILD authorization.
+ */
+export type OpportunitySummary = {
+  id: string;
+  organization_id: string;
+  title: string;
+  stage: OpportunityStage;
+  problem_statement: string | null;
+  buyer_description: string | null;
+  price_hypothesis: string | null;
+  mvp_days: number | null;
+  updated_at: string;
+  pbv: number;
+  gates_passed: boolean;
+  gate_state: Record<GateName, boolean>;
+  qualified_commitments: number;
+};
