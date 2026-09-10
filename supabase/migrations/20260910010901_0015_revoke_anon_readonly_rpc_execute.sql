@@ -8,3 +8,4 @@ revoke execute on function public.gate_state_json(uuid) from anon;
 revoke execute on function public.enforce_pbv_weight_total() from anon;
 revoke execute on function public.reject_ledger_mutation() from anon;
 revoke execute on function public.set_updated_at() from anon;
+;

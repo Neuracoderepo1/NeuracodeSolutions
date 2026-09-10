@@ -1,3 +1,4 @@
+
 alter table public.buyers enable row level security;
 alter table public.evidence enable row level security;
 alter table public.experiments enable row level security;
@@ -43,3 +44,4 @@ create policy exit_scores_upsert on public.exit_scores for insert
   with check (public.is_org_admin_for_opportunity(opportunity_id));
 create policy exit_scores_update on public.exit_scores for update
   using (public.is_org_admin_for_opportunity(opportunity_id));
+;

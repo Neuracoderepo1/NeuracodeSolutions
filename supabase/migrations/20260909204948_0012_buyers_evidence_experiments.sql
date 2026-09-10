@@ -1,3 +1,4 @@
+
 create type public.buyer_status as enum (
   'TARGET','CONTACTED','REPLIED','INTERVIEWED','TRIAL','LOI','PAID','CUSTOMER','REJECTED'
 );
@@ -110,3 +111,4 @@ create index on public.evidence (opportunity_id);
 create index on public.experiments (opportunity_id);
 create index on public.landing_tests (opportunity_id);
 create index on public.revenue_snapshots (opportunity_id);
+;

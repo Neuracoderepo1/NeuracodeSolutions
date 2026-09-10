@@ -1,3 +1,4 @@
+
 alter table public.opportunities
   add column description text,
   add column problem_statement text,
@@ -5,3 +6,4 @@ alter table public.opportunities
   add column buyer_description text,
   add column price_hypothesis text,
   add column mvp_days int;
+;

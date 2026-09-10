@@ -1,3 +1,4 @@
+
 -- CRITICAL FIX: transition_opportunity() checked org membership but never
 -- checked governance role for the BUILD transition. Per the BUILD
 -- Authorization Contract, "actor has sufficient governance authority" is a
@@ -7,12 +8,12 @@
 -- a blocking reason (not a hard exception) so it fits the existing
 -- allowed/blocked decision-ledger pattern rather than throwing.
 
-create or replace function public.transition_opportunity(p_opportunity_id uuid, p_requested_stage opportunity_stage)
- returns jsonb
- language plpgsql
- security definer
- set search_path to 'pg_catalog', 'public'
-as $function$
+CREATE OR REPLACE FUNCTION public.transition_opportunity(p_opportunity_id uuid, p_requested_stage opportunity_stage)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
 declare
   v_opp record;
   v_org_id uuid;
@@ -130,3 +131,4 @@ begin
   );
 end;
 $function$;
+;

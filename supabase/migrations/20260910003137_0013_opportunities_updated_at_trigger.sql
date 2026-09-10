@@ -1,3 +1,4 @@
+
 -- Direct detail edits (0012) don't go through transition_opportunity(),
 -- which is the only place updated_at was previously being maintained.
 -- Add a standard trigger so updated_at reflects ANY row update,
@@ -19,3 +20,4 @@ create trigger trg_opportunities_updated_at
 before update on public.opportunities
 for each row
 execute function public.set_updated_at();
+;

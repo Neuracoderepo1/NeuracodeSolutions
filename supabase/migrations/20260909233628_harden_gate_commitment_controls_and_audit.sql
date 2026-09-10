@@ -127,3 +127,4 @@ grant execute on function public.record_pbv_evidence(uuid, text, numeric, text) 
 grant execute on function public.set_validation_gate(uuid, public.gate_name, public.gate_status, text) to authenticated;
 grant execute on function public.transition_opportunity(uuid, public.opportunity_stage) to authenticated;
 grant execute on function public.verify_commitment(uuid, public.verification_status) to authenticated;
+;

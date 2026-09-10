@@ -51,3 +51,4 @@ $$;
 create trigger trg_commitments_sync_gate
   after insert or update or delete on public.commitments
   for each row execute function public.trg_sync_commitment_gate();
+;

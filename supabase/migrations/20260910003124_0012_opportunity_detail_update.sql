@@ -1,3 +1,4 @@
+
 -- The MVP workspace lets founders document the problem, solution
 -- hypothesis, buyer, pricing, and MVP target. These are descriptive
 -- fields, not authorization-relevant, but the previous migrations
@@ -29,3 +30,4 @@ for update
 to authenticated
 using (public.is_org_member(organization_id))
 with check (public.is_org_member(organization_id));
+;
