@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/AppNav";
-import { GATE_LABELS, GATE_ORDER, pbvBand } from "@/lib/pbv";
-import type { OpportunitySummary } from "@/lib/types";
+import { GateTrack } from "@/components/gate-track";
+import { StagePill } from "@/components/stage-pill";
+import { pbvBand } from "@/lib/pbv";
+import type { OpportunitySummary, OpportunityStage } from "@/lib/types";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -62,9 +64,7 @@ export default async function Home() {
         {Array.from(byStage.entries()).map(([stage, opps]) => (
           <section key={stage}>
             <div className="mb-3 flex items-baseline gap-2 border-b border-base-3 pb-2">
-              <h2 className="font-mono text-micro uppercase tracking-wide text-ink-secondary">
-                {stage.replace("_", " ")}
-              </h2>
+              <StagePill stage={stage as OpportunityStage} />
               <span className="font-mono text-micro text-ink-tertiary">
                 ({opps.length})
               </span>
@@ -93,28 +93,8 @@ export default async function Home() {
                         {opp.problem_statement}
                       </p>
                     )}
-                    <div className="mb-2 flex flex-wrap gap-1">
-                      {GATE_ORDER.map((g) => {
-                        // Fixed: gate_state values are the actual status
-                        // STRING, not a boolean — verified live 2026-09-11.
-                        // `=== true` here always evaluated false.
-                        const status = opp.gate_state?.[g] ?? "OPEN";
-                        const passed = status === "PASSED";
-                        const failed = status === "FAILED";
-                        return (
-                          <span
-                            key={g}
-                            title={`${GATE_LABELS[g]}: ${status}`}
-                            className={`inline-block h-2 w-2 rounded-full ${
-                              passed
-                                ? "bg-signal-green"
-                                : failed
-                                  ? "bg-signal-red"
-                                  : "border border-base-3"
-                            }`}
-                          />
-                        );
-                      })}
+                    <div className="mb-2">
+                      <GateTrack statuses={opp.gate_state ?? {}} />
                     </div>
                     <div className="font-mono text-micro text-ink-tertiary">
                       {opp.qualified_commitments}/3 commitments ·{" "}

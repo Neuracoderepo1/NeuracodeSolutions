@@ -17,6 +17,28 @@ export type OpportunityStage =
   | "REVENUE"
   | "EXIT";
 
+// Matches the declared order of public.opportunity_stage exactly (Postgres
+// enums sort by declaration order, confirmed against
+// supabase/migrations/..._0001_enums_and_extensions.sql).
+export const STAGES: OpportunityStage[] = [
+  "DISCOVER",
+  "RESEARCH",
+  "PAIN",
+  "BUYER",
+  "WTP",
+  "WHITESPACE",
+  "GTM",
+  "PRE_SALE",
+  "BUILD",
+  "LAUNCH",
+  "REVENUE",
+  "EXIT",
+];
+
+export function stageIndex(stage: OpportunityStage): number {
+  return STAGES.indexOf(stage);
+}
+
 export const GATE_TYPES = [
   "OPPORTUNITY",
   "PAIN",
