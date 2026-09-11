@@ -1,7 +1,12 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+// "/" must be an EXACT match, not a prefix — PUBLIC_PATHS.some(p =>
+// pathname.startsWith(p)) with "/" in that list would match every path in
+// the app and disable auth entirely. "/login" stays a prefix in case it
+// ever grows subpaths (e.g. /login/reset).
+const PUBLIC_EXACT_PATHS = ["/"];
+const PUBLIC_PREFIX_PATHS = ["/login"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -33,7 +38,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublic = PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p));
+  const isPublic =
+    PUBLIC_EXACT_PATHS.includes(request.nextUrl.pathname) ||
+    PUBLIC_PREFIX_PATHS.some((p) => request.nextUrl.pathname.startsWith(p));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

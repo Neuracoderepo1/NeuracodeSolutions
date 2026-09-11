@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PBV_DIMENSIONS } from "@/lib/pbv";
+import { AppNav } from "@/components/AppNav";
 import BuildAuthorizationPanel from "./build-authorization-panel";
 import type {
   CommitmentRow,
@@ -55,6 +56,7 @@ export default async function OpportunityDetailPage({
   if (oppError) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
+        <AppNav email={user.email ?? ""} active="opportunities" />
         <div className="rounded-sm border border-signal-red bg-base-1 p-4 text-sm text-signal-red">
           Query failed: {oppError.message}
         </div>
@@ -70,8 +72,10 @@ export default async function OpportunityDetailPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
+      <AppNav email={user.email ?? ""} active="opportunities" />
+
       <Link
-        href="/"
+        href="/opportunities"
         className="mb-6 inline-block font-mono text-micro uppercase tracking-wide text-ink-tertiary hover:text-ink-primary"
       >
         ← Board

@@ -42,14 +42,17 @@ export default function BuildAuthorizationPanel({
       {!showingResult && (
         <>
           <Row label="PBV" value={`${Math.round(opportunity.pbv)} / 85`} ok={opportunity.pbv >= 85} />
-          {GATE_ORDER.map((g) => (
-            <Row
-              key={g}
-              label={GATE_LABELS[g]}
-              value={opportunity.gate_state?.[g] ? "PASSED" : "OPEN"}
-              ok={opportunity.gate_state?.[g] === true}
-            />
-          ))}
+          {GATE_ORDER.map((g) => {
+            // Fixed: gate_state values are the actual status STRING
+            // ("OPEN"|"PASSED"|"FAILED") — verified live 2026-09-11.
+            // The previous `value={... ? "PASSED" : "OPEN"}` was a
+            // truthy check on a non-empty string, so it displayed
+            // "PASSED" for every gate regardless of real status, while
+            // the dot's `=== true` check was always false — the label
+            // and the dot were actively contradicting each other.
+            const status = opportunity.gate_state?.[g] ?? "OPEN";
+            return <Row key={g} label={GATE_LABELS[g]} value={status} ok={status === "PASSED"} />;
+          })}
           <Row
             label="Commitments"
             value={`${opportunity.qualified_commitments} / 3`}
