@@ -31,6 +31,36 @@ export type GateName = (typeof GATE_TYPES)[number];
 export type GateStatus = "OPEN" | "PASSED";
 
 export type CommitmentType = "INTEREST" | "LOI" | "PAID_PILOT" | "PREORDER" | "CUSTOMER";
+
+export type CommitmentRow = {
+  id: string;
+  opportunity_id: string;
+  type: CommitmentType;
+  buyer_reference: string | null;
+  source: string | null;
+  verification_status: VerificationStatus;
+  created_at: string;
+};
+
+export type DecisionLedgerRow = {
+  id: string;
+  opportunity_id: string;
+  decision: string;
+  previous_stage: OpportunityStage;
+  requested_stage: OpportunityStage;
+  result: string;
+  pbv: number | null;
+  qualified_commitments: number | null;
+  blocking_reasons: string[] | null;
+  actor: string;
+  created_at: string;
+};
+
+export type PbvScoreRow = {
+  dimension_key: string;
+  score: number;
+  updated_at: string;
+};
 export type VerificationStatus = "UNVERIFIED" | "VERIFIED" | "REJECTED";
 
 export const QUALIFYING_COMMITMENT_TYPES: CommitmentType[] = [

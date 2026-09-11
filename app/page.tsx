@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/login/actions";
 import { GATE_LABELS, GATE_ORDER, pbvBand } from "@/lib/pbv";

@@ -73,3 +73,36 @@ per-tenant history. It's global reference data, structurally identical to
 `pbv_dimensions` (also `using (true)`), not a leak of one org's data to
 another. No fix needed here -- per-opportunity transition history lives in
 `decision_ledger`, which is already org-scoped.
+
+## 2026-09-10 reconciliation pass (second one — see below for what this found)
+
+An end-to-end audit found this migrations folder had drifted from the live
+database again, in two ways:
+
+1. **Four migrations existed live but not in git**, applied between
+   2026-09-10T16:07 and 2026-09-10T23:40: `install_authorization_regression_suite`,
+   `fix_authorization_regression_runner`, `correct_authorization_regression_plan`
+   (three iterations installing/fixing a pgTAP suite —
+   `tests.authorization_regression()`, 21 assertions, re-run independently
+   during this audit: **21/21 pass live**), and
+   `0030_backfill_founder_opportunity_ownership` (companion to
+   `0029_reassign_founder_org_owner` — backfills `opportunities.created_by`
+   after the org-ownership transplant, since that migration only touched
+   `organization_members`). All four reconstructed from
+   `supabase_migrations.schema_migrations.statements` the same way the
+   first reconciliation pass worked, and added as their own files here.
+
+2. **Real duplicate-number collisions were reintroduced** despite the first
+   reconciliation's stated goal of resolving them: `organization_onboarding`,
+   `install_pgtap`, and `fix_trigger_security_definer` each exist as **two
+   different files** (`0016/17/18` and `0026/27/28`), ~11 minutes apart,
+   not identical — the later versions are slightly cleaner rewrites of the
+   same migrations, not documentation-only diffs. Also `0012` now names
+   three unrelated files and `0013` names four. This means the sequence
+   numbers in filenames are no longer a reliable "applied in this order"
+   signal — **the file's leading timestamp is the only trustworthy
+   ordering**, and `supabase_migrations.schema_migrations` (queried live)
+   is the actual source of truth for what applied when. This wasn't fixed
+   as part of this pass — renaming/squashing risks losing history and
+   wasn't judged safe to do without more context on why the duplicates
+   exist. Flagging for whoever picks this up next.

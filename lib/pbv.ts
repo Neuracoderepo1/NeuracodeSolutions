@@ -30,3 +30,19 @@ export const GATE_ORDER: GateName[] = [
   "DISTRIBUTION",
   "COMMITMENT",
 ];
+
+// Matches the real seeded rows in public.pbv_dimensions (migration 0003) —
+// pbv_dimensions itself only stores key+weight, no display label, so the
+// label mapping lives here rather than in the DB.
+export const PBV_DIMENSIONS: { key: string; label: string; weight: number }[] = [
+  { key: "pain", label: "Pain severity", weight: 15 },
+  { key: "frequency", label: "Frequency", weight: 10 },
+  { key: "buyerClarity", label: "Buyer clarity", weight: 10 },
+  { key: "existingSpend", label: "Existing spend", weight: 10 },
+  { key: "roi", label: "Economic ROI", weight: 10 },
+  { key: "wtp", label: "Willingness to pay", weight: 15 },
+  { key: "whitespace", label: "Competitive whitespace", weight: 10 },
+  { key: "distribution", label: "Distribution", weight: 10 },
+  { key: "feasibility", label: "MVP feasibility", weight: 5 },
+  { key: "exit", label: "Exit potential", weight: 5 },
+];
