@@ -97,7 +97,7 @@ export default async function DashboardPage() {
 
       <div className="mb-8">
         <div className="font-mono text-micro uppercase tracking-wide text-signal-gold">
-          NeuraCode · Product Operations
+          Armadillon · Product Decision Engine
         </div>
         <h1 className="mt-2 text-xl font-medium text-ink-primary">Portfolio dashboard</h1>
         <p className="mt-1 text-sm text-ink-tertiary">

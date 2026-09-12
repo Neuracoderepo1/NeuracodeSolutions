@@ -5,7 +5,7 @@ export function AppNav({ email, active }: { email: string; active: "dashboard" |
   return (
     <div className="mb-8 flex items-center justify-between border-b border-base-3 pb-4">
       <div className="flex items-center gap-6">
-        <div className="font-mono text-micro uppercase tracking-wide text-signal-gold">NeuraCode</div>
+        <div className="font-mono text-micro uppercase tracking-wide text-signal-gold">Armadillon</div>
         <nav className="flex gap-4 text-sm">
           <Link
             href="/dashboard"

@@ -46,12 +46,12 @@ export default function LandingPage() {
     <div className="landing-root">
       <header>
         <nav className="wrap" aria-label="Primary">
-          <a className="brand" href="#top" aria-label="Neuracode home">
+          <a className="brand" href="#top" aria-label="Armadillon home">
             <span className="brand-mark">
-              <span>N</span>
+              <span>A</span>
             </span>
             <span>
-              NEURACODE
+              ARMADILLON
               <small>PRODUCT DECISION ENGINE</small>
             </span>
           </a>
@@ -98,7 +98,7 @@ export default function LandingPage() {
               <span>NO BUILD.</span>
             </h1>
             <p className="hero-copy">
-              Neuracode is the Product Decision Engine between product conviction and execution.
+              Armadillon is the Product Decision Engine between product conviction and execution.
               An opportunity reaches BUILD only when evidence is real, validation has passed,
               commitments are verified, and the required authority permits the transition.
             </p>
@@ -400,7 +400,7 @@ export default function LandingPage() {
 
       <footer>
         <div className="wrap">
-          <span>© {new Date().getFullYear()} Neuracode</span>
+          <span>© {new Date().getFullYear()} Neuracode · Armadillon</span>
           <span>Product Decision Engine · No validation. No build.</span>
         </div>
       </footer>

@@ -1,4 +1,12 @@
-# NeuraCode Product Operations Command Center
+# Armadillon — Product Decision Engine
+
+**Product name: Armadillon.** Built and operated by Neuracode; the
+Supabase project (`ivcweujfzdwmkztjczln`, "Neuracode Product Solutions"),
+GitHub repo name, and internal seed identifiers (e.g.
+`seed@neuracode.internal`) intentionally still carry the Neuracode name —
+renaming the product's public identity doesn't require renaming
+infrastructure that isn't user-facing. See the rename commit on
+2026-09-10 for exactly what changed and what was deliberately left alone.
 
 **Status: provisional scaffold, committed 2026-09-09.** This is NOT the
 Phase 3 build from the Claude Code session referenced in `HANDOFF.md` —

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NeuraCode Product Operations",
-  description: "No validation, no build.",
+  title: "Armadillon — Product Decision Engine",
+  description: "NO VALIDATION. NO BUILD.",
 };
 
 export default function RootLayout({
