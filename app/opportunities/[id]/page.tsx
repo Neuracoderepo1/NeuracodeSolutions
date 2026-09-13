@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PBV_DIMENSIONS } from "@/lib/pbv";
 import { AppNav } from "@/components/AppNav";
 import BuildAuthorizationPanel from "./build-authorization-panel";
+import { GatePanel } from "./gate-panel";
+import { PbvEvidencePanel } from "./pbv-evidence-panel";
+import { CommitmentsPanel } from "./commitments-panel";
 import type {
   CommitmentRow,
   DecisionLedgerRow,
@@ -24,34 +26,45 @@ export default async function OpportunityDetailPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: opportunity, error: oppError }, { data: pbvScores }, { data: commitments }, { data: ledger }] =
-    await Promise.all([
-      supabase
-        .from("opportunity_summary")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle<OpportunitySummary>(),
-      supabase
-        .from("pbv_scores")
-        .select("dimension_key, score, updated_at")
-        .eq("opportunity_id", id)
-        .returns<PbvScoreRow[]>(),
-      supabase
-        .from("commitments")
-        .select("id, opportunity_id, type, buyer_reference, source, verification_status, created_at")
-        .eq("opportunity_id", id)
-        .order("created_at", { ascending: false })
-        .returns<CommitmentRow[]>(),
-      supabase
-        .from("decision_ledger")
-        .select(
-          "id, opportunity_id, decision, previous_stage, requested_stage, result, pbv, qualified_commitments, blocking_reasons, actor, created_at"
-        )
-        .eq("opportunity_id", id)
-        .order("created_at", { ascending: false })
-        .limit(10)
-        .returns<DecisionLedgerRow[]>(),
-    ]);
+  const [
+    { data: opportunity, error: oppError },
+    { data: pbvScores },
+    { data: commitments },
+    { data: ledger },
+    { data: canEdit },
+  ] = await Promise.all([
+    supabase
+      .from("opportunity_summary")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle<OpportunitySummary>(),
+    supabase
+      .from("pbv_scores")
+      .select("dimension_key, score, updated_at")
+      .eq("opportunity_id", id)
+      .returns<PbvScoreRow[]>(),
+    supabase
+      .from("commitments")
+      .select("id, opportunity_id, type, buyer_reference, source, verification_status, created_at")
+      .eq("opportunity_id", id)
+      .order("created_at", { ascending: false })
+      .returns<CommitmentRow[]>(),
+    supabase
+      .from("decision_ledger")
+      .select(
+        "id, opportunity_id, decision, previous_stage, requested_stage, result, pbv, qualified_commitments, blocking_reasons, actor, created_at"
+      )
+      .eq("opportunity_id", id)
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .returns<DecisionLedgerRow[]>(),
+    // Same check the RPCs enforce server-side (is_org_admin_for_opportunity)
+    // — used here only to decide whether to show edit controls at all. It
+    // changes nothing about authorization: an unauthorized attempt would be
+    // rejected by set_validation_gate()/verify_commitment() regardless of
+    // what this renders.
+    supabase.rpc("is_org_admin_for_opportunity", { p_opportunity_id: id }),
+  ]);
 
   if (oppError) {
     return (
@@ -108,58 +121,24 @@ export default async function OpportunityDetailPage({
         <Field label="MVP estimate" value={`${opportunity.mvp_days} days`} />
       )}
 
+      <Section title="Validation gates">
+        <GatePanel
+          opportunityId={id}
+          gateState={opportunity.gate_state ?? {}}
+          canEdit={canEdit ?? false}
+        />
+      </Section>
+
       <Section title="PBV breakdown">
-        <div className="overflow-hidden rounded-sm border border-base-3">
-          {PBV_DIMENSIONS.map((d) => {
-            const row = scoreByKey.get(d.key);
-            return (
-              <div
-                key={d.key}
-                className="flex items-center justify-between border-b border-base-3 bg-base-1 px-3 py-2 text-sm last:border-b-0"
-              >
-                <span className="text-ink-secondary">
-                  {d.label}{" "}
-                  <span className="font-mono text-micro text-ink-tertiary">
-                    (wt {d.weight})
-                  </span>
-                </span>
-                <span className="font-mono text-ink-primary">
-                  {row ? `${row.score}/10` : (
-                    <span className="text-ink-tertiary">NO EVIDENCE</span>
-                  )}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        <PbvEvidencePanel opportunityId={id} scoreByKey={scoreByKey} />
       </Section>
 
       <Section title={`Commitments (${commitments?.length ?? 0})`}>
-        {!commitments || commitments.length === 0 ? (
-          <Empty>No commitments recorded.</Empty>
-        ) : (
-          <div className="space-y-1">
-            {commitments.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between rounded-sm border border-base-3 bg-base-1 px-3 py-2 text-sm"
-              >
-                <span className="text-ink-primary">{c.type}</span>
-                <span
-                  className={`font-mono text-micro ${
-                    c.verification_status === "VERIFIED"
-                      ? "text-signal-green"
-                      : c.verification_status === "REJECTED"
-                        ? "text-signal-red"
-                        : "text-ink-tertiary"
-                  }`}
-                >
-                  {c.verification_status}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <CommitmentsPanel
+          opportunityId={id}
+          commitments={commitments ?? []}
+          canVerify={canEdit ?? false}
+        />
       </Section>
 
       <Section title="Decision ledger">
