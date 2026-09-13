@@ -34,9 +34,17 @@ export default async function Home() {
     <main className="mx-auto max-w-5xl px-4 py-10">
       <AppNav email={user.email ?? ""} active="opportunities" />
 
-      <div className="mb-8">
-        <h1 className="text-xl font-medium text-ink-primary">Opportunity board</h1>
-        <p className="mt-1 text-sm text-ink-tertiary">No validation, no build.</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-medium text-ink-primary">Opportunity board</h1>
+          <p className="mt-1 text-sm text-ink-tertiary">No validation, no build.</p>
+        </div>
+        <Link
+          href="/opportunities/new"
+          className="rounded-sm bg-signal-gold px-3 py-1.5 text-sm font-medium text-base-0 transition-opacity hover:opacity-90"
+        >
+          + New opportunity
+        </Link>
       </div>
 
       {error && (
