@@ -6,11 +6,23 @@ import BuildAuthorizationPanel from "./build-authorization-panel";
 import { GatePanel } from "./gate-panel";
 import { PbvEvidencePanel } from "./pbv-evidence-panel";
 import { CommitmentsPanel } from "./commitments-panel";
+import { BuyersPanel } from "./buyers-panel";
+import { EvidenceLogPanel } from "./evidence-log-panel";
+import { ExperimentsPanel } from "./experiments-panel";
+import { LandingTestsPanel } from "./landing-tests-panel";
+import { RevenuePanel } from "./revenue-panel";
+import { ExitScoresPanel } from "./exit-scores-panel";
 import type {
   CommitmentRow,
   DecisionLedgerRow,
   OpportunitySummary,
   PbvScoreRow,
+  BuyerRow,
+  EvidenceRow,
+  ExperimentRow,
+  LandingTestRow,
+  RevenueSnapshotRow,
+  ExitScoresRow,
 } from "@/lib/types";
 
 export default async function OpportunityDetailPage({
@@ -32,6 +44,12 @@ export default async function OpportunityDetailPage({
     { data: commitments },
     { data: ledger },
     { data: canEdit },
+    { data: buyers },
+    { data: landingTests },
+    { data: evidenceEntries },
+    { data: experiments },
+    { data: revenueSnapshots },
+    { data: exitScores },
   ] = await Promise.all([
     supabase
       .from("opportunity_summary")
@@ -64,6 +82,41 @@ export default async function OpportunityDetailPage({
     // rejected by set_validation_gate()/verify_commitment() regardless of
     // what this renders.
     supabase.rpc("is_org_admin_for_opportunity", { p_opportunity_id: id }),
+    supabase
+      .from("buyers")
+      .select("*")
+      .eq("opportunity_id", id)
+      .order("created_at", { ascending: false })
+      .returns<BuyerRow[]>(),
+    supabase
+      .from("landing_tests")
+      .select("*")
+      .eq("opportunity_id", id)
+      .order("recorded_at", { ascending: false })
+      .returns<LandingTestRow[]>(),
+    supabase
+      .from("evidence")
+      .select("*")
+      .eq("opportunity_id", id)
+      .order("created_at", { ascending: false })
+      .returns<EvidenceRow[]>(),
+    supabase
+      .from("experiments")
+      .select("*")
+      .eq("opportunity_id", id)
+      .order("created_at", { ascending: false })
+      .returns<ExperimentRow[]>(),
+    supabase
+      .from("revenue_snapshots")
+      .select("*")
+      .eq("opportunity_id", id)
+      .order("snapshot_date", { ascending: false })
+      .returns<RevenueSnapshotRow[]>(),
+    supabase
+      .from("exit_scores")
+      .select("*")
+      .eq("opportunity_id", id)
+      .maybeSingle<ExitScoresRow>(),
   ]);
 
   if (oppError) {
@@ -133,6 +186,22 @@ export default async function OpportunityDetailPage({
         <PbvEvidencePanel opportunityId={id} scoreByKey={scoreByKey} />
       </Section>
 
+      <Section title={`Buyers (${buyers?.length ?? 0})`}>
+        <BuyersPanel opportunityId={id} buyers={buyers ?? []} />
+      </Section>
+
+      <Section title="Evidence log">
+        <EvidenceLogPanel opportunityId={id} entries={evidenceEntries ?? []} />
+      </Section>
+
+      <Section title={`Experiments (${experiments?.length ?? 0})`}>
+        <ExperimentsPanel opportunityId={id} experiments={experiments ?? []} />
+      </Section>
+
+      <Section title="Landing tests">
+        <LandingTestsPanel opportunityId={id} tests={landingTests ?? []} />
+      </Section>
+
       <Section title={`Commitments (${commitments?.length ?? 0})`}>
         <CommitmentsPanel
           opportunityId={id}
@@ -188,6 +257,18 @@ export default async function OpportunityDetailPage({
 
       <Section title="">
         <BuildAuthorizationPanel opportunity={opportunity} />
+      </Section>
+
+      <Section title="Revenue">
+        <RevenuePanel
+          opportunityId={id}
+          snapshots={revenueSnapshots ?? []}
+          canEdit={canEdit ?? false}
+        />
+      </Section>
+
+      <Section title="Exit scores">
+        <ExitScoresPanel opportunityId={id} scores={exitScores} canEdit={canEdit ?? false} />
       </Section>
     </main>
   );

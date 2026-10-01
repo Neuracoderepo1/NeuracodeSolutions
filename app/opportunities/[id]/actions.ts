@@ -2,7 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { TransitionResult, GateName, GateStatus, CommitmentType } from "@/lib/types";
+import type {
+  TransitionResult,
+  GateName,
+  GateStatus,
+  CommitmentType,
+  BuyerStatus,
+  ExperimentVerdict,
+} from "@/lib/types";
+import { EXIT_SCORE_DIMENSIONS } from "@/lib/types";
 
 export type BuildActionState = {
   result: TransitionResult | null;
@@ -164,5 +172,312 @@ export async function verifyCommitment(
   // this UPDATE automatically and recomputes the COMMITMENT gate.
   revalidatePath(`/opportunities/${opportunityId}`);
   revalidatePath("/");
+  return { ok: true, error: null };
+}
+
+// ----------------------------------------------------------------------------
+// Buyers, evidence, experiments, landing tests, revenue snapshots, exit
+// scores — the six tables added in migration 0012 with RLS enabled and no
+// app code prior to this. buyers/evidence/experiments/landing_tests are
+// member-writable; revenue_snapshots/exit_scores are OWNER/ADMIN-only
+// writes (revenue_insert / exit_scores_upsert / exit_scores_update
+// policies) — this file does not duplicate that check, it just relays
+// whatever Postgres decides, same pattern as everything above.
+// ----------------------------------------------------------------------------
+
+export async function createBuyer(
+  opportunityId: string,
+  _prevState: SimpleActionState,
+  formData: FormData
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+
+  const company = String(formData.get("company") ?? "").trim();
+  if (!company) return { ok: false, error: "Company is required" };
+
+  const numeric = (name: string) => {
+    const raw = String(formData.get(name) ?? "").trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isNaN(n) ? null : n;
+  };
+  const text = (name: string) => String(formData.get(name) ?? "").trim() || null;
+
+  const { error } = await supabase.from("buyers").insert({
+    opportunity_id: opportunityId,
+    company,
+    contact: text("contact"),
+    role: text("role"),
+    company_size: text("companySize"),
+    estimated_revenue: numeric("estimatedRevenue"),
+    pain: text("pain"),
+    current_solution: text("currentSolution"),
+    current_spend: numeric("currentSpend"),
+    estimated_wtp: numeric("estimatedWtp"),
+    next_followup: text("nextFollowup"),
+    notes: text("notes"),
+    created_by: user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+  return { ok: true, error: null };
+}
+
+export async function updateBuyerStatus(
+  opportunityId: string,
+  buyerId: string,
+  status: BuyerStatus
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("buyers")
+    .update({
+      status,
+      last_contact: status === "TARGET" ? null : new Date().toISOString(),
+    })
+    .eq("id", buyerId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+  return { ok: true, error: null };
+}
+
+export async function logLandingTest(
+  opportunityId: string,
+  _prevState: SimpleActionState,
+  formData: FormData
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+
+  const count = (name: string) => {
+    const n = Number(formData.get(name) ?? 0);
+    return Number.isNaN(n) || n < 0 ? 0 : Math.floor(n);
+  };
+
+  const { error } = await supabase.from("landing_tests").insert({
+    opportunity_id: opportunityId,
+    visitors: count("visitors"),
+    cta_clicks: count("ctaClicks"),
+    leads: count("leads"),
+    qualified_leads: count("qualifiedLeads"),
+    demos: count("demos"),
+    trial_requests: count("trialRequests"),
+    lois: count("lois"),
+    preorders: count("preorders"),
+    created_by: user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+  return { ok: true, error: null };
+}
+
+export async function addEvidence(
+  opportunityId: string,
+  _prevState: SimpleActionState,
+  formData: FormData
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+
+  const claim = String(formData.get("claim") ?? "").trim();
+  if (!claim) return { ok: false, error: "Claim is required" };
+
+  const evidenceLevel = Number(formData.get("evidenceLevel") ?? 0);
+  if (Number.isNaN(evidenceLevel) || evidenceLevel < 0 || evidenceLevel > 10) {
+    return { ok: false, error: "Evidence level must be 0–10" };
+  }
+
+  const confidenceRaw = String(formData.get("confidence") ?? "").trim();
+  let confidence: number | null = null;
+  if (confidenceRaw) {
+    confidence = Number(confidenceRaw);
+    if (Number.isNaN(confidence) || confidence < 0 || confidence > 1) {
+      return { ok: false, error: "Confidence must be between 0 and 1" };
+    }
+  }
+
+  const text = (name: string) => String(formData.get(name) ?? "").trim() || null;
+
+  const { error } = await supabase.from("evidence").insert({
+    opportunity_id: opportunityId,
+    claim,
+    evidence_type: text("evidenceType"),
+    evidence_level: evidenceLevel,
+    source: text("source"),
+    source_url: text("sourceUrl"),
+    source_date: text("sourceDate"),
+    confidence,
+    notes: text("notes"),
+    created_by: user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+  return { ok: true, error: null };
+}
+
+export async function createExperiment(
+  opportunityId: string,
+  _prevState: SimpleActionState,
+  formData: FormData
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+
+  const hypothesis = String(formData.get("hypothesis") ?? "").trim();
+  if (!hypothesis) return { ok: false, error: "Hypothesis is required" };
+
+  const text = (name: string) => String(formData.get(name) ?? "").trim() || null;
+
+  const { error } = await supabase.from("experiments").insert({
+    opportunity_id: opportunityId,
+    hypothesis,
+    test: text("test"),
+    success_criteria: text("successCriteria"),
+    start_date: text("startDate"),
+    end_date: text("endDate"),
+    created_by: user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+  return { ok: true, error: null };
+}
+
+export async function recordExperimentResult(
+  opportunityId: string,
+  experimentId: string,
+  _prevState: SimpleActionState,
+  formData: FormData
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const verdict = String(formData.get("verdict") ?? "") as ExperimentVerdict;
+  const result = String(formData.get("result") ?? "").trim() || null;
+  const evidence = String(formData.get("evidence") ?? "").trim() || null;
+
+  const { error } = await supabase
+    .from("experiments")
+    .update({ verdict, result, evidence })
+    .eq("id", experimentId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+  return { ok: true, error: null };
+}
+
+export async function logRevenueSnapshot(
+  opportunityId: string,
+  _prevState: SimpleActionState,
+  formData: FormData
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+
+  const num = (name: string, fallback = 0) => {
+    const raw = String(formData.get(name) ?? "").trim();
+    if (!raw) return fallback;
+    const n = Number(raw);
+    return Number.isNaN(n) ? fallback : n;
+  };
+  const numOrNull = (name: string) => {
+    const raw = String(formData.get(name) ?? "").trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isNaN(n) ? null : n;
+  };
+
+  // RLS (revenue_insert) restricts this insert to OWNER/ADMIN — a non-admin
+  // submitting this form gets Postgres's permission-denied error back
+  // verbatim, same as every other admin-gated action in this file.
+  const { error } = await supabase.from("revenue_snapshots").insert({
+    opportunity_id: opportunityId,
+    mrr: num("mrr"),
+    arr: num("arr"),
+    customers: Math.floor(num("customers")),
+    new_customers: Math.floor(num("newCustomers")),
+    expansion_mrr: num("expansionMrr"),
+    churn_pct: numOrNull("churnPct"),
+    net_new_mrr: numOrNull("netNewMrr"),
+    cac: numOrNull("cac"),
+    ltv: numOrNull("ltv"),
+    gross_margin: numOrNull("grossMargin"),
+    created_by: user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
+  return { ok: true, error: null };
+}
+
+export async function upsertExitScores(
+  opportunityId: string,
+  _prevState: SimpleActionState,
+  formData: FormData
+): Promise<SimpleActionState> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in" };
+
+  const scores: Record<string, number | null> = {};
+  for (const dim of EXIT_SCORE_DIMENSIONS) {
+    const raw = String(formData.get(dim.key) ?? "").trim();
+    if (!raw) {
+      scores[dim.key] = null;
+      continue;
+    }
+    const n = Number(raw);
+    if (Number.isNaN(n) || n < 0 || n > 10) {
+      return { ok: false, error: `${dim.label} score must be 0–10` };
+    }
+    scores[dim.key] = n;
+  }
+
+  // exit_scores is keyed by opportunity_id — one row per opportunity, so
+  // this is always an upsert, never a plain insert.
+  const { error } = await supabase.from("exit_scores").upsert({
+    opportunity_id: opportunityId,
+    ...scores,
+    updated_by: user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/opportunities/${opportunityId}`);
   return { ok: true, error: null };
 }

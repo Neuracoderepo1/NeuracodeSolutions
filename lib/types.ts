@@ -139,6 +139,153 @@ export type TransitionResult = {
   blockingReasons: string[];
 };
 
+// ----------------------------------------------------------------------------
+// buyers / evidence / experiments / landing_tests / revenue_snapshots /
+// exit_scores — matching supabase/migrations/..._0012_buyers_evidence_experiments.sql
+// and ..._0013_rls_new_tables.sql. None of these tables have app code prior
+// to this addition.
+// ----------------------------------------------------------------------------
+
+export type BuyerStatus =
+  | "TARGET"
+  | "CONTACTED"
+  | "REPLIED"
+  | "INTERVIEWED"
+  | "TRIAL"
+  | "LOI"
+  | "PAID"
+  | "CUSTOMER"
+  | "REJECTED";
+
+export const BUYER_STATUSES: BuyerStatus[] = [
+  "TARGET",
+  "CONTACTED",
+  "REPLIED",
+  "INTERVIEWED",
+  "TRIAL",
+  "LOI",
+  "PAID",
+  "CUSTOMER",
+  "REJECTED",
+];
+
+export type BuyerRow = {
+  id: string;
+  opportunity_id: string;
+  company: string;
+  contact: string | null;
+  role: string | null;
+  company_size: string | null;
+  estimated_revenue: number | null;
+  pain: string | null;
+  current_solution: string | null;
+  current_spend: number | null;
+  estimated_wtp: number | null;
+  status: BuyerStatus;
+  last_contact: string | null;
+  next_followup: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type EvidenceRow = {
+  id: string;
+  opportunity_id: string;
+  claim: string;
+  evidence_type: string | null;
+  evidence_level: number;
+  source: string | null;
+  source_url: string | null;
+  source_date: string | null;
+  confidence: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type ExperimentVerdict = "PASS" | "FAIL" | "EXTEND" | "PIVOT" | "KILL";
+
+export const EXPERIMENT_VERDICTS: ExperimentVerdict[] = [
+  "PASS",
+  "FAIL",
+  "EXTEND",
+  "PIVOT",
+  "KILL",
+];
+
+export type ExperimentRow = {
+  id: string;
+  opportunity_id: string;
+  hypothesis: string;
+  test: string | null;
+  success_criteria: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  result: string | null;
+  verdict: ExperimentVerdict | null;
+  evidence: string | null;
+  created_at: string;
+};
+
+export type LandingTestRow = {
+  id: string;
+  opportunity_id: string;
+  visitors: number;
+  cta_clicks: number;
+  leads: number;
+  qualified_leads: number;
+  demos: number;
+  trial_requests: number;
+  lois: number;
+  preorders: number;
+  recorded_at: string;
+};
+
+export type RevenueSnapshotRow = {
+  id: string;
+  opportunity_id: string;
+  mrr: number;
+  arr: number;
+  customers: number;
+  new_customers: number;
+  expansion_mrr: number;
+  churn_pct: number | null;
+  net_new_mrr: number | null;
+  cac: number | null;
+  ltv: number | null;
+  gross_margin: number | null;
+  snapshot_date: string;
+};
+
+export const EXIT_SCORE_DIMENSIONS = [
+  { key: "revenue_score", label: "Revenue" },
+  { key: "growth_score", label: "Growth" },
+  { key: "retention_score", label: "Retention" },
+  { key: "technology_score", label: "Technology" },
+  { key: "ip_score", label: "IP" },
+  { key: "customer_quality_score", label: "Customer quality" },
+  { key: "strategic_relevance_score", label: "Strategic relevance" },
+  { key: "documentation_score", label: "Documentation" },
+  { key: "security_score", label: "Security" },
+  { key: "operational_independence_score", label: "Operational independence" },
+] as const;
+
+export type ExitScoreKey = (typeof EXIT_SCORE_DIMENSIONS)[number]["key"];
+
+export type ExitScoresRow = {
+  opportunity_id: string;
+  revenue_score: number | null;
+  growth_score: number | null;
+  retention_score: number | null;
+  technology_score: number | null;
+  ip_score: number | null;
+  customer_quality_score: number | null;
+  strategic_relevance_score: number | null;
+  documentation_score: number | null;
+  security_score: number | null;
+  operational_independence_score: number | null;
+  updated_at: string;
+};
+
 /**
  * Row shape of the public.opportunity_summary view (migration 0025).
  * Read-only display data — pbv/gatesPassed/qualifiedCommitments here are
